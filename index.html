@@ -258,10 +258,8 @@
     font-weight: 600;
     color: var(--text);
     width: 50px;
-  }
-  .qty-display:focus {
-    outline: none;
-    border-color: var(--accent);
+    display: inline-block;
+    min-width: 36px;
   }
 
   /* CART PANEL */
@@ -658,18 +656,29 @@ function renderProducts() {
     const qty = quantities[p.id] || 0;
     const card = document.createElement('div');
     card.className = 'product-card';
+    card.setAttribute('data-id', p.id);
     card.innerHTML = `
       <span class="product-emoji">${p.emoji}</span>
       <div class="product-name">${p.name}</div>
       <div class="product-price">$${p.price}</div>
       <div class="product-prime">Prime: $${p.prime}</div>
       <div class="qty-control">
-        <button class="qty-btn minus" onclick="updateQty(${p.id}, -1)">−</button>
-        <input class="qty-display" type="number" min="0" value="${qty}" onchange="setQty(${p.id}, this.value)" />
-        <button class="qty-btn" onclick="updateQty(${p.id}, 1)">+</button>
+        <button class="qty-btn minus" data-id="${p.id}" data-delta="-1">−</button>
+        <span class="qty-display" id="qty-${p.id}">${qty}</span>
+        <button class="qty-btn" data-id="${p.id}" data-delta="1">+</button>
       </div>
     `;
     grid.appendChild(card);
+  });
+
+  // Attach events after render
+  grid.querySelectorAll('.qty-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const id = parseInt(this.getAttribute('data-id'));
+      const delta = parseInt(this.getAttribute('data-delta'));
+      updateQty(id, delta);
+    });
   });
 }
 
@@ -677,13 +686,9 @@ function updateQty(id, delta) {
   const current = quantities[id] || 0;
   const newVal = Math.max(0, current + delta);
   quantities[id] = newVal;
-  renderProducts();
-  renderCart();
-}
-
-function setQty(id, val) {
-  const v = parseInt(val) || 0;
-  quantities[id] = Math.max(0, v);
+  // Update only the qty display, not full re-render
+  const qtyEl = document.getElementById('qty-' + id);
+  if (qtyEl) qtyEl.textContent = newVal;
   renderCart();
 }
 
